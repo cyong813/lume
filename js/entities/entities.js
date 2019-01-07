@@ -5,7 +5,7 @@ game.PlayerEntity = me.Entity.extend({
     /**
      * constructor
      */
-    init:function (x, y, settings) {
+    init: function(x, y, settings) {
         // call the constructor
         this._super(me.Entity, 'init', [x, y , settings]);
         
@@ -160,6 +160,10 @@ game.FireflyEntity = me.CollectableEntity.extend({
 
         // add a physic body
         this.body = new me.Body(this);
+
+        // set the entity body collision type
+        this.body.collisionType = me.collision.types.COLLECTABLE_OBJECT;
+
         // add a default collision shape
         this.body.addShape(new me.Rect(0, 0, this.width, this.height));
         // configure max speed and friction
@@ -178,12 +182,12 @@ game.FireflyEntity = me.CollectableEntity.extend({
         this.slideDown = false;
 
         // make it "alive"
-        this.alive = true;
+        this.aliveFly = true;
     },
 
     // manage the enemy movement
     update: function(dt) {
-        if (this.alive) {
+        if (this.aliveFly) {
             if (this.slideDown && this.pos.y <= this.startY) {
                 this.slideDown = false;
                 this.body.force.y = this.body.maxVel.y;
@@ -199,9 +203,6 @@ game.FireflyEntity = me.CollectableEntity.extend({
 
         // check & update movement
         this.body.update(dt);
-
-        // handle collisions against other shapes
-        me.collision.check(this);
 
         // return true if we moved or if the renderable was updated
         return (this._super(me.CollectableEntity, 'update', [dt]) || this.body.vel.x !== 0 || this.body.vel.y !== 0);
@@ -242,6 +243,10 @@ game.EnemyBatEntity = me.Sprite.extend({
 
         // add a physic body
         this.body = new me.Body(this);
+
+        // set the entity body collision type
+        this.body.collisionType = me.collision.types.ENEMY_OBJECT;
+
         // add a default collision shape
         this.body.addShape(new me.Rect(0, 0, this.width, this.height));
         // configure max speed and friction
