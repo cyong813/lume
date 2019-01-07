@@ -56,3 +56,6 @@ melonJS is licensed under the [MIT License](http://www.opensource.org/licenses/m
 ## Art Credits
 [Main sprite (modified)](https://opengameart.org/content/platformer-baddies)
 [Platform tiles](https://opengameart.org/content/dirt-platformer-tiles)
+[Tree](https://opengameart.org/content/lots-of-hyptosis-tiles-organized)
+[Fireflies](https://opengameart.org/content/explosions-0)
+[Bats](https://opengameart.org/content/bat-sprite)

@@ -20,9 +20,14 @@ var game = {
         // Initialize the audio.
         me.audio.init("mp3,ogg");
 
+        me.state.set(me.state.LOADING, new game.LoadingScreen());
+        
         // set and load all resources.
         // (this will also automatically switch to the loading screen)
         me.loader.preload(game.resources, this.loaded.bind(this));
+
+        // initialize melonJS and display loading screen
+        me.state.change(me.state.LOADING);
     },
 
     // Run on game resources loaded.
@@ -32,6 +37,8 @@ var game = {
 
         // add our player entity in the entity pool
         me.pool.register("mainPlayer", game.PlayerEntity);
+        me.pool.register("FireflyEntity", game.FireflyEntity);
+        me.pool.register("EnemyBatEntity", game.EnemyBatEntity);
 
         // enable keyboard
         me.input.bindKey(me.input.KEY.LEFT, "left");
