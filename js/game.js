@@ -39,6 +39,7 @@ var game = {
         me.pool.register("mainPlayer", game.PlayerEntity);
         me.pool.register("FireflyEntity", game.FireflyEntity);
         me.pool.register("EnemyBatEntity", game.EnemyBatEntity);
+        me.pool.register("EnemySpiderEntity", game.EnemySpiderEntity);
 
         // enable keyboard
         me.input.bindKey(me.input.KEY.LEFT, "left");

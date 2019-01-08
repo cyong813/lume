@@ -10,20 +10,28 @@ game.PlayerEntity = me.Entity.extend({
         this._super(me.Entity, 'init', [x, y , settings]);
         
         // max walking/jump speed
-        this.body.setMaxVelocity(3,15);
+        this.body.setMaxVelocity(2.5,15);
         this.body.setFriction(0.4,0);
 
         // set display to follow pos on both axis
         me.game.viewport.follow(this.pos, me.game.viewport.AXIS.BOTH, 0.4);
 
+        this.facing = true; // left
+
         // ensure player is NOT updated outside the viewport
         this.alwaysUpdate = true;
 
         // define basic walking animation (some frames)
-        this.renderable.addAnimation("walk",[4,3,2,0]);
+        this.renderable.addAnimation("walk", [4,3,2,0]);
 
         // define standing animation 
         this.renderable.addAnimation("stand", [0,1,2,3]);
+
+        // define jump
+        this.renderable.addAnimation("jump", [4,5]);
+
+        // define hurt animation
+        this.renderable.addAnimation("hurt", [6,5]);
 
         // set standing animation as default
         this.renderable.setCurrentAnimation("stand");
@@ -32,10 +40,12 @@ game.PlayerEntity = me.Entity.extend({
     /**
      * update the entity
      */
-    update : function (dt) {
+    update: function(dt) {
         if (me.input.isKeyPressed("left")) {
             // unflip the sprite
             this.renderable.flipX(false);
+
+            this.facing = true;
 
             // update default force
             this.body.force.x = -this.body.maxVel.x;
@@ -47,6 +57,8 @@ game.PlayerEntity = me.Entity.extend({
         else if (me.input.isKeyPressed("right")) {
             // flip the sprite on horizontal axis
             this.renderable.flipX(true);
+
+            this.facing = false;
 
             this.body.force.x = this.body.maxVel.x;
             // change to walking
@@ -65,6 +77,9 @@ game.PlayerEntity = me.Entity.extend({
                 // set current vel to max def val
                 // gravity then does the rest
                 this.body.force.y = -this.body.maxVel.y;
+            }
+            if (!this.renderable.isCurrentAnimation("jump")) {
+                this.renderable.setCurrentAnimation("jump");
             }
         }
         else {
@@ -85,7 +100,7 @@ game.PlayerEntity = me.Entity.extend({
      * collision handler
      * (called when colliding with other objects)
      */
-    onCollision : function (response, other) {
+    onCollision: function(response, other) {
         switch (response.b.body.collisionType) {
           case me.collision.types.WORLD_SHAPE:
             // Simulate a platform object
@@ -102,7 +117,7 @@ game.PlayerEntity = me.Entity.extend({
                 // Disable collision on the x axis
                 response.overlapV.x = 0;
       
-                // Repond to the platform (it is solid)
+                // Respond to the platform (it is solid)
                 return true;
               }
       
@@ -112,23 +127,28 @@ game.PlayerEntity = me.Entity.extend({
             break;
       
           case me.collision.types.ENEMY_OBJECT:
-            if ((response.overlapV.y > 0) && !this.body.jumping) {
-              // bounce (force jump)
-              this.body.falling = false;
-              this.body.vel.y = -this.body.maxVel.y * me.timer.tick;
-      
-              // set the jumping flag
-              this.body.jumping = true;
+            // bounce (force jump)
+            if (this.facing && !this.renderable.isFlickering()) {
+                this.body.vel.x = this.body.maxVel.x * me.timer.tick;    
             }
-            else {
-              // let's flicker in case we touched an enemy
-              this.renderable.flicker(750);
+            else if (!this.facing && !this.renderable.isFlickering()) {
+                this.body.vel.x = -this.body.maxVel.x * me.timer.tick;
             }
-      
+            this.body.vel.y = -(this.body.maxVel.y/2) * me.timer.tick;
+
+            // set the jumping flag
+            this.body.jumping = true;
+
+            // let's flicker in case we touched an enemy
+            this.renderable.flicker(750);
+            if (!this.renderable.isCurrentAnimation("hurt")) {
+                this.renderable.setCurrentAnimation("hurt");
+            }
+    
             // Fall through
       
           default:
-            // Do not respond to other objects (e.g. coins)
+            // Do not respond to other objects (e.g. fireflies)
             return false;
         }
       
@@ -249,9 +269,11 @@ game.EnemyBatEntity = me.Sprite.extend({
 
         // add a default collision shape
         this.body.addShape(new me.Rect(0, 0, this.width, this.height));
+        
         // configure max speed and friction
         this.body.setMaxVelocity(1, 2);
         this.body.setFriction(0.4, 0);
+        
         // enable physic collision (off by default for basic me.Renderable)
         this.isKinematic = false;
 
@@ -301,10 +323,99 @@ game.EnemyBatEntity = me.Sprite.extend({
      */
     onCollision: function(response, other) {
         if (response.b.body.collisionType !== me.collision.types.WORLD_SHAPE) {
-            // res.y >0 means touched by something on the bottom
-            // which mean at top position for this one
+            // res.y > 0 means touched by something on the bottom
+            // which means at top position for this one
             if (this.alive && (response.overlapV.y > 0) && response.a.body.falling) {
-                this.renderable.flicker(750);
+                //this.renderable.flicker(750);
+            }
+            return false;
+        }
+        // Make all other objects solid
+        return true;
+    }
+});
+
+/**
+ * an enemy Spider Entity
+ */
+game.EnemySpiderEntity = me.Sprite.extend({
+    init: function (x, y, settings) {
+        // save the area size as defined in Tiled
+        var width = settings.width;
+
+        // define this here instead of tiled
+        settings.image = "spider";
+
+        // adjust the size setting information to match the sprite size
+        // so that the entity object is created with the right size
+        settings.framewidth = settings.width = 46;
+        settings.frameheight = settings.height = 88;
+
+        // call the parent constructor
+        this._super(me.Sprite, 'init', [x, y, settings]);
+
+        // add a physic body
+        this.body = new me.Body(this);
+
+        // set the entity body collision type
+        this.body.collisionType = me.collision.types.ENEMY_OBJECT;
+
+        // add a default collision shape (only want spider body though)
+        this.body.addShape(new me.Rect(0, 88, this.width-10, this.height-10));
+        // configure max speed and friction
+        this.body.setMaxVelocity(0, 0);
+        this.body.setFriction(0.4, 0);
+        // enable physic collision (off by default for basic me.Renderable)
+        this.isKinematic = false;
+
+        // set start/end position based on the initial area size
+        y = this.pos.y;
+        this.startY = y;
+        this.pos.y = this.endY = y + width - this.width;
+
+        // to remember which side we were walking
+        this.webDown = false;
+
+        // make it "alive"
+        this.alive = true;
+    },
+
+    // manage the enemy movement
+    update: function(dt) {
+        if (this.alive) {
+            if (this.webDown && this.pos.y <= this.startY) {
+                this.webDown = false;
+                this.body.force.y = this.body.maxVel.y;
+            }
+            else if (!this.webDown && this.pos.y >= this.endY){
+                this.webDown = true;
+                this.body.force.y = -this.body.maxVel.y;
+            }
+        }
+        else {
+            this.body.force.y = 0;
+        }
+
+        // check & update movement
+        this.body.update(dt);
+
+        // handle collisions against other shapes
+        me.collision.check(this);
+
+        // return true if we moved or if the renderable was updated
+        return (this._super(me.Sprite, 'update', [dt]) || this.body.vel.x !== 0 || this.body.vel.y !== 0);
+    },
+
+    /**
+     * collision handler
+     * (called when colliding with other objects)
+     */
+    onCollision: function(response, other) {
+        if (response.b.body.collisionType !== me.collision.types.WORLD_SHAPE) {
+            // res.y > 0 means touched by something on the bottom
+            // which means at top position for this one
+            if (this.alive && (response.overlapV.y > 0) && response.a.body.falling) {
+                //this.renderable.flicker(750);
             }
             return false;
         }

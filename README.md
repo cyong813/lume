@@ -59,3 +59,4 @@ melonJS is licensed under the [MIT License](http://www.opensource.org/licenses/m
 [Tree](https://opengameart.org/content/lots-of-hyptosis-tiles-organized)
 [Fireflies](https://opengameart.org/content/explosions-0)
 [Bats](https://opengameart.org/content/bat-sprite)
+[Spiders](https://opengameart.org/content/lpc-spider)
