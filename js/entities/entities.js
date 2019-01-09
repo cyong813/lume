@@ -16,7 +16,8 @@ game.PlayerEntity = me.Entity.extend({
         // set display to follow pos on both axis
         me.game.viewport.follow(this.pos, me.game.viewport.AXIS.BOTH, 0.4);
 
-        this.facing = true; // left
+        this.facing = true; // left direction
+        this.body.bounce = 0.25;
 
         // ensure player is NOT updated outside the viewport
         this.alwaysUpdate = true;
@@ -127,20 +128,30 @@ game.PlayerEntity = me.Entity.extend({
             break;
       
           case me.collision.types.ENEMY_OBJECT:
-            // bounce (force jump)
-            if (this.facing && !this.renderable.isFlickering()) {
-                this.body.vel.x = this.body.maxVel.x * me.timer.tick;    
+            // check if player jumps on top of enemy
+            if ((response.overlapV.y > 0) && !this.body.jumping) {
+                // bounce (force jump)
+                this.body.falling = false;
+                this.body.vel.y = -(this.body.maxVel.y/2) * me.timer.tick;
+        
+                // set the jumping flag
+                this.body.jumping = true;
             }
-            else if (!this.facing && !this.renderable.isFlickering()) {
-                this.body.vel.x = -this.body.maxVel.x * me.timer.tick;
+            else {
+                if (this.facing && !this.renderable.isFlickering()) {
+                    this.body.vel.x = this.body.maxVel.x * me.timer.tick;
+                    this.body.force.x = this.body.vel.x;
+                }
+                else if (!this.facing && !this.renderable.isFlickering()) {
+                    this.body.vel.x = -this.body.maxVel.x * me.timer.tick;
+                    this.body.force.x = this.body.vel.x;
+                }
+                
+                // let's flicker in case we touched an enemy
+                this.renderable.flicker(750);
+                console.log(this.facing, this.body.vel.x);
             }
-            this.body.vel.y = -(this.body.maxVel.y/2) * me.timer.tick;
 
-            // set the jumping flag
-            this.body.jumping = true;
-
-            // let's flicker in case we touched an enemy
-            this.renderable.flicker(750);
             if (!this.renderable.isCurrentAnimation("hurt")) {
                 this.renderable.setCurrentAnimation("hurt");
             }
@@ -323,10 +334,10 @@ game.EnemyBatEntity = me.Sprite.extend({
      */
     onCollision: function(response, other) {
         if (response.b.body.collisionType !== me.collision.types.WORLD_SHAPE) {
-            // res.y > 0 means touched by something on the bottom
-            // which means at top position for this one
+            // res.y >0 means touched by something on the bottom
+            // which mean at top position for this one
             if (this.alive && (response.overlapV.y > 0) && response.a.body.falling) {
-                //this.renderable.flicker(750);
+                this.renderable.flicker(750);
             }
             return false;
         }
