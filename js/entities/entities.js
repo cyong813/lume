@@ -132,24 +132,30 @@ game.PlayerEntity = me.Entity.extend({
             if ((response.overlapV.y > 0) && !this.body.jumping) {
                 // bounce (force jump)
                 this.body.falling = false;
+                this.body.setMaxVelocity(6,15);
                 this.body.vel.y = -(this.body.maxVel.y/2) * me.timer.tick;
-        
+
+                if (this.facing) {
+                    this.body.vel.x = this.body.maxVel.x * me.timer.tick;
+                }
+                else if (!this.facing) {
+                    this.body.vel.x = -this.body.maxVel.x * me.timer.tick;
+                }
+
                 // set the jumping flag
                 this.body.jumping = true;
             }
             else {
+                // let's flicker in case we touched an enemy
+                this.renderable.flicker(2000);
+                console.log(this.renderable.isFlickering())
+
                 if (this.facing && !this.renderable.isFlickering()) {
                     this.body.vel.x = this.body.maxVel.x * me.timer.tick;
-                    this.body.force.x = this.body.vel.x;
                 }
                 else if (!this.facing && !this.renderable.isFlickering()) {
                     this.body.vel.x = -this.body.maxVel.x * me.timer.tick;
-                    this.body.force.x = this.body.vel.x;
                 }
-                
-                // let's flicker in case we touched an enemy
-                this.renderable.flicker(750);
-                console.log(this.facing, this.body.vel.x);
             }
 
             if (!this.renderable.isCurrentAnimation("hurt")) {
